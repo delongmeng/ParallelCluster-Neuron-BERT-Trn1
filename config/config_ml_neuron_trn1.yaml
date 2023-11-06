@@ -1,0 +1,61 @@
+Region: us-east-1
+Image:
+  Os: ubuntu2004
+HeadNode:
+  Iam:
+    S3Access:
+      - BucketName: my-ml-bucket
+        EnableWriteAccess: false
+    AdditionalIamPolicies:
+      - Policy: arn:aws:iam::aws:policy/AmazonSSMFullAccess
+  InstanceType: c5.4xlarge
+  Networking:
+    SubnetId: <public-subnet-id> # us-east-1a
+  Ssh:
+    KeyName: delongmeng
+  LocalStorage:
+    RootVolume:
+      Size: 1024
+  CustomActions:
+    OnNodeConfigured:
+      Script: s3://my-ml-bucket/install_neuron.sh
+Scheduling:
+  Scheduler: slurm
+  SlurmQueues:
+    - Name: queue1
+      ComputeResources:
+        - Instances:
+            - InstanceType: trn1.32xlarge
+          MinCount: 0
+          MaxCount: 16
+          DisableSimultaneousMultithreading: true
+          Efa:
+            Enabled: true
+          Name: trn1
+      ComputeSettings:
+        LocalStorage:
+          RootVolume:
+            Size: 1024
+          EphemeralVolume:
+            MountDir: /local_storage
+      Networking:
+        SubnetIds:
+          - <private-subnet-id> # us-east-1a
+        PlacementGroup:
+          Enabled: true
+      CustomActions:
+        OnNodeConfigured:
+          Script: s3://my-ml-bucket/install_neuron.sh
+      Iam:
+        S3Access:
+          - BucketName: my-ml-bucket
+            EnableWriteAccess: false
+        AdditionalIamPolicies:
+          - Policy: arn:aws:iam::aws:policy/AmazonSSMFullAccess
+SharedStorage:
+  - EfsSettings:
+      ProvisionedThroughput: 1024
+      ThroughputMode: provisioned
+    MountDir: /efs
+    Name: neuron
+    StorageType: Efs
